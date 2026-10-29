@@ -98,7 +98,8 @@ Each debtor card shows both a displayed index and a persistent debtor ID. In a h
 
 ### Viewing help: `help`
 
-Shows a message explaining how to access the help page.
+Opens a scrollable, keyboard-accessible in-app command reference. It includes the syntax and a short example for
+each released command. The window also retains a button to copy the link to this online User Guide.
 
 ![help message](images/helpMessage.png)
 
@@ -328,6 +329,27 @@ Examples:
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
+### Filtering debtors by outstanding amount: `list-amount`
+
+Displays debtors whose outstanding amounts fall within an inclusive range. This is useful for focusing on high-value
+accounts or a particular collection band without changing any debtor record.
+
+Format: `list-amount [min/AMOUNT] [max/AMOUNT]`
+
+* Provide at least one of `min/` and `max/`.
+* Amounts use the same non-negative currency format as `add` and `edit`, including values such as `0`, `S$500.00`,
+  and `2,000.00`.
+* Bounds are inclusive: a balance equal to `min/` or `max/` is included.
+* When both bounds are present, the minimum cannot exceed the maximum.
+* Results replace an existing `find` or amount filter and appear in ascending persistent debtor-ID order.
+* The displayed index refers to the filtered list. For example, `delete 1` acts on the first debtor currently shown.
+* `list-amount` is read-only and does not change or save debtor data. Run `list` to restore every active debtor.
+
+Examples:
+* `list-amount min/1000` displays debtors owing at least `S$1,000.00`.
+* `list-amount max/S$500.00` displays debtors owing at most `S$500.00`, including zero balances.
+* `list-amount min/250 max/2,000.00` displays balances from `S$250.00` to `S$2,000.00`, inclusive.
+
 ### Deleting a debtor: `delete`
 
 Deletes the specified debtor from OSPS.
@@ -429,9 +451,14 @@ Action | Format, Examples
 --------|------------------
 **Add** | `add n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [o/OUTSTANDING_AMOUNT] [t/TAG]…​` <br> e.g., `add n/Olaf Go p/91234567 e/olaf.letnonego@example.com a/H4M8+3J3, Kunlun Station, Antarctica o/S$1,250.00`
 **Clear** | `clear`
+**Contact preferences** | `contact --id DEBTOR_ID [--method METHOD \| --clear-method] [--hours HH:mm-HH:mm \| --clear-hours]`
+**Contactable** | `contactable [--at HH:mm] [--method call\|sms\|email\|letter]`<br> e.g., `contactable --at 09:30 --method sms`
+**Export** | `export --id DEBTOR_ID`<br> e.g., `export --id 3`
+**Preview** | `preview edit INDEX [FIELDS]` or `preview delete INDEX`<br> e.g., `preview delete 2`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit** | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [o/OUTSTANDING_AMOUNT] [t/TAG]…​`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
 **Find** | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find Alice 98765432`
+**Filter by amount** | `list-amount [min/AMOUNT] [max/AMOUNT]`<br> e.g., `list-amount min/500 max/2,000`
 **List** | `list`
 **Note** | `note --id DEBTOR_ID [--outcome OUTCOME] --text NOTE_TEXT`<br> e.g., `note --id 1 --outcome reached --text Called debtor.`
 **Follow-up** | `followup --id DEBTOR_ID --date YYYY-MM-DD` or `--clear` or `--done`<br> e.g., `followup --id 1 --date 2026-11-03`
@@ -455,3 +482,17 @@ Examples:
 * `contact --id 3 --clear-hours`
 
 Unchanged fields retain their previous values. Use `show --id 3` to see the preferences.
+
+### Previewing an edit or deletion: `preview`
+
+Use `preview edit INDEX [FIELDS]` or `preview delete INDEX` to see the result without changing or saving data. INDEX refers to the current displayed list, including filtering and sorting. Run the original command to apply it.
+
+### Exporting a debtor profile: `export`
+
+Use `export --id ID` to write the profile and interaction history as UTF-8 text to `exports/debtor-ID.txt` relative to the application working directory. An existing export is never overwritten; move or rename it before exporting the same ID again. The file contains sensitive debtor information, so share and store it carefully.
+
+### Finding contactable debtors: `contactable`
+
+Use `contactable [--at HH:mm] [--method call|sms|email|letter]` to find debtors with a configured contact window that includes the given local time. Omit `--at` to use the current local time. The start is included and the end is excluded. Debtors without hours are excluded; when a method is specified, only debtors with that explicit preference match. This is a scheduling aid, not a permission check, and does not contact anyone.
+
+Example: `contactable --at 09:30 --method sms`. The command replaces the displayed list; use `list` to restore all debtors.
